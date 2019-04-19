@@ -57,6 +57,11 @@ def simulate():
     result_dict = []
     result_colnums_names = ['N','Density','Solver','Budget','Cost',
                             'Time_avg','Time_sd','Sol_avg','Sol_sd']
+    total_simulations = utils.getTotalSimulation([Ns, densities, budgets, costType])
+    total_simulations *= nsim
+    progress = 0
+    print (total_simulations)
+
 
     for N in Ns:
         for density in densities:
@@ -79,9 +84,13 @@ def simulate():
                                 s_time, s_sol = greedy_time(G,C,B,U,cost)
                             sols[sim,solver_index] = s_sol
                             times[sim,solver_index] = s_time
+                        progress += 1
+                        if verbose: utils.update_progress(progress/total_simulations)
 
                     result_dict.extend(utils.generate_result_dict(N, density, budget, 
                                                                   cost, solvers, sols, times))
+                        
+                    
     now = datetime.datetime.now()
     csv_file = "simulation/simulation_" + now.strftime("%Y-%m-%d-%H-%M") + ".csv"
     try:

@@ -5,6 +5,7 @@
 import networkx as nx
 import numpy as np
 import random,copy, time, json, os, argparse, collections
+from functools import reduce
 from gurobipy import *
 from UMLP_solver import *
 
@@ -107,3 +108,29 @@ def bfs_depth(G):
 	return nodes, nodes_depth
 
 
+def update_progress(progress):
+    barLength = 40 # Modify this to change the length of the progress bar
+    status = ""
+    if isinstance(progress, int):
+        progress = float(progress)
+    if not isinstance(progress, float):
+        progress = 0
+        status = "error: progress var must be float\r\n"
+    if progress < 0:
+        progress = 0
+        status = "Halt...\r\n"
+    if progress >= 1:
+        progress = 1
+        status = "Done...\r\n"
+    block = int(round(barLength*progress))
+    text = "\rPercent: [{0}] {1}% {2}".format( "="*block + " "*(barLength-block), progress*100, status)
+    sys.stdout.write(text)
+    sys.stdout.flush()
+
+def getTotalSimulation(Ls):
+	def map0to1(i): return 1 if i == 0 else i
+	def mult(x1, x2): return x1 * x2
+	lens = list(map(lambda l: len(l),Ls))
+	lens_nozero = list(map(lambda i : map0to1(i), lens))
+	simulations = reduce(mult, lens_nozero)
+	return simulations
