@@ -4,7 +4,7 @@
 '''
 import networkx as nx
 import numpy as np
-import random,copy, time, json, os, argparse
+import random,copy, time, json, os, argparse, collections
 from gurobipy import *
 from UMLP_solver import *
 
@@ -82,5 +82,27 @@ def generate_result_dict(N, density, budget, cost, solvers, sols, times):
 			'Sol_sd':sols_sds[solver_idx]}
 		result.append(d)
 	return result
+
+
+def bfs_depth(G):
+	nodes_depth = np.zeros(G.order())
+	nodes_in_degree = list(G.in_degree())
+	roots_with_degree = list(filter(lambda x: x[1] == 0, nodes_in_degree))
+	roots = list(map(lambda x: x[0],roots_with_degree))
+	root = roots.pop()
+	seen, queue = set([root]), collections.deque([(root,0)])
+	nodes_depth[root] = 0
+	depth = 0
+	while queue:
+		vertex,d = queue.popleft()
+		if d > depth: depth += 1
+		for node in list(G.neighbors(vertex)):
+			if node not in seen:
+				seen.add(node)
+				queue.append((node,depth+1))
+				nodes_depth[node] = depth+1
+	for other_root in roots:
+		nodes_depth[other_root] = 0
+	return nodes_depth
 
 
