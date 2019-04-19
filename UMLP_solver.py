@@ -6,8 +6,9 @@
 '''
 import networkx as nx
 import numpy as np
-import random,copy, time, json, collections
+import random,copy, time, json, collections, operator
 from gurobipy import *
+import utils
 
 # G <- a DAG object representing n knowledge points' dependencies
 # B <- a number describing total budget
@@ -58,7 +59,7 @@ def ilp_time(G,C,B,U):
 ################################################################
 ####################### Helper Fns. ############################
 ################################################################
-def cost(C, A, i, type = "additive"):
+def cost(C, A, i, type = "add"):
     #inputs:
     # C: cost array
     # A: set of acquired kps
@@ -67,7 +68,7 @@ def cost(C, A, i, type = "additive"):
     cost = C[i]
     return cost
 
-def get_actions(S, G, C, type = "additive"):
+def get_actions(S, G, C, type = "add"):
     #inputs:
     # S: current state
     # G: kps graph object
@@ -121,7 +122,7 @@ def compute_utility(S, U):
 ################################################################
 ####################### Brute Force ############################
 ################################################################
-def brute_force(G, C, B, U, type = "additive"):
+def brute_force(G, C, B, U, type = "add"):
     #brute force graph traversal with BFS
     A = []
     B = B
@@ -151,7 +152,7 @@ def brute_force(G, C, B, U, type = "additive"):
                 global_max = (current_max_seq, current_max_u)
     return global_max
 
-def brute_force_time(G, C, B, U, type = "additive"):
+def brute_force_time(G, C, B, U, type = "add"):
 	start = time.time()
 	result = brute_force(G, C, B, U)
 	end = time.time()
@@ -161,4 +162,32 @@ def brute_force_time(G, C, B, U, type = "additive"):
 ################################################################
 ########################### Greedy #############################
 ################################################################
+def greedy(G, C, B, U, type = "add"):
+    #greedy search
+    A = []
+    B = B
+    global_max = ((A,B), 0)
+    nodes, depth_order = utils.bfs_depth(G)
+    depth_utility_order = list(zip(nodes, depth_order,-U))
+    greedy_order = sorted(depth_utility_order, key = operator.itemgetter(1, 2))
+    seq = []
+    utility = 0
 
+    while B > 0:
+    	node, depth, u_node = greedy_order.pop(0)
+    	c_node = cost(C, seq, node, type = "add")
+    	if B - c_node < 0:
+    		break
+    	else:
+	    	seq.append(node)
+	    	utility -= u_node
+	    	B -= c_node
+
+    return (seq, utility, B)
+
+def greedy_time(G, C, B, U, type = "add"):
+	start = time.time()
+	result = greedy(G, C, B, U)
+	end = time.time()
+	sol = result[1]
+	return end - start, sol

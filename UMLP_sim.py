@@ -74,7 +74,9 @@ def simulate():
                             if solver == "ilp":
                                 s_time, s_sol = ilp_time(G,C,B,U)
                             elif solver == "bf":
-                                s_time, s_sol = brute_force_time(G,C,B,U)
+                                s_time, s_sol = brute_force_time(G,C,B,U,cost)
+                            elif solver == "gd":
+                                s_time, s_sol = greedy_time(G,C,B,U,cost)
                             sols[sim,solver_index] = s_sol
                             times[sim,solver_index] = s_time
 
