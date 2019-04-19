@@ -6,7 +6,7 @@
 '''
 import networkx as nx
 import numpy as np
-import random,copy, time, json
+import random,copy, time, json, collections
 from gurobipy import *
 
 # G <- a DAG object representing n knowledge points' dependencies
@@ -125,10 +125,10 @@ def brute_force(G, C, B, U, type = "additive"):
     #brute force graph traversal with BFS
     A = []
     B = B
-    Q = [(A,B)]
+    Q = collections.deque([(A,B)])
     global_max = ((A,B), 0)
     while len(Q) != 0:
-        S = Q.pop()
+        S = Q.popleft()
         actions, costs = get_actions(S, G, C, type) 
         action_indicies = list(range(len(actions)))
         take_action_i = lambda i: take_action(actions[i], costs[i], S)
@@ -157,4 +157,8 @@ def brute_force_time(G, C, B, U, type = "additive"):
 	end = time.time()
 	sol = result[1]
 	return end - start, sol
+
+################################################################
+########################### Greedy #############################
+################################################################
 
