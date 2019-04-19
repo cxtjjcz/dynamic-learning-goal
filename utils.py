@@ -26,7 +26,7 @@ parser.add_argument('--verbose',default = False, type=bool, help="Print progress
 parser.add_argument('--solver',default = '[bf]', type=str, 
     help="Specify solver types in [x,y,...] form (bf: Brute Force; gd: Greedy; ilp: Integer Linear Program)")
 parser.add_argument('--maxlearnP',default = '[0.166,0.166,0.1]', type=str, 
-    help="Specify the range of maximum fraction of knowledge points that user can learn in [1/start,1/end,step] format.")
+    help="Specify the range of maximum fraction of knowledge points that user can learn in [start, end,step] format.")
 parser.add_argument('--costType',default = '[add]', type=str, 
     help="Specify cost type in [x,y,...] form (add: additive; mono: monotone; sub: submodular)")
 
