@@ -1,7 +1,7 @@
 # Dyanmic Learning Goal
 ## Utility Maximizing Learning Plan Solver
 
-If you want to do simluations with the solver, plese first create a folder under root directory called "simulation".
+If you want to do simluations with the solver, plese first create a folder under root directory called `simulation`. Under `simulation`, create another folder called  `probelm_instance`.
 
 
 Then, in your Terminal, run
@@ -18,3 +18,4 @@ The parameters that you can specify are in the following table:
 | `solver` | The type(s) of solver used in the form of `[x,y,...]` (brute force: bf; integer linear program: ilp; greedy: gd) | `[bf, ilp ,gd]`|
 |`maxlearnP`| The range of the maximum portion of knowledge points that user can learn in the form of `[start,end,step]`  | `[0.166,0.166,0.1]`| 
 |`costType`| The cost function type used for simulation in the form of `[x,y,...]` (add: additive; mono: monotone; sub: submodular) |`[add, mono, sub]` |
+|`loadPrev`| For faster future testing, you can choose to save randomly generated test instances. Default is set to `False` |`False` |
