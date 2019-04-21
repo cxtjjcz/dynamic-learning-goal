@@ -77,7 +77,7 @@ def simulate():
                             loadPrev = False
                     else:
                         print ("Creating new instances...")
-                            sims = []
+                        sims = []
 
                     for sim in range(nsim):
                         if loadPrev and sim < len(sims):

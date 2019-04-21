@@ -41,6 +41,7 @@ def process_args(p):
 	nsim = p['nsim']
 	verbose = p['verbose']
 	costType = p['costType']
+	loadPrev = p['loadPrev']
 	p.pop('nsim')
 	p.pop('verbose')
 	p.pop('loadPrev')
