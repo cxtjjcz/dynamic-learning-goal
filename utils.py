@@ -4,7 +4,7 @@
 '''
 import networkx as nx
 import numpy as np
-import random,copy, time, json, os, argparse, collections
+import random,copy, time, json, os, argparse, collections,pickle
 from functools import reduce
 from gurobipy import *
 from UMLP_solver import *
@@ -30,6 +30,7 @@ parser.add_argument('--maxlearnP',default = '[0.166,0.166,0.1]', type=str,
     help="Specify the range of maximum fraction of knowledge points that user can learn in [start, end,step] format.")
 parser.add_argument('--costType',default = '[add]', type=str, 
     help="Specify cost type in [x,y,...] form (add: additive; mono: monotone; sub: submodular)")
+parser.add_argument('--loadPrev',default = True, type=bool, help="Load previously created test instances?")
 
 def process_args(p):
 	def splitAndStrip(s):
@@ -42,6 +43,7 @@ def process_args(p):
 	costType = p['costType']
 	p.pop('nsim')
 	p.pop('verbose')
+	p.pop('loadPrev')
 
 	
 	arg_vals = list(map(splitAndStrip, list(p.values())))
@@ -69,7 +71,7 @@ def process_args(p):
 			raise AssertionError('Unrecognized cost function type!')
 
 
-	return [Ns, densities, solvers, budgets, nsim, costType, verbose]
+	return [Ns, densities, solvers, budgets, nsim, costType, verbose, loadPrev]
 
 def generate_result_dict(N, density, budget, cost, solvers, sols, times):
 	sols_means = sols.mean(axis=0)
@@ -143,3 +145,12 @@ def getTotalSimulation(Ls):
 	lens_nozero = list(map(lambda i : map0to1(i), lens))
 	simulations = reduce(mult, lens_nozero)
 	return simulations
+
+def load_saved_instance(N,density,budget,cost):
+	pickle_in = open('simulation/probelm_instance/%s_%s_%s_%s.pickle' % (N,round(density,5),round(budget,5),cost), 'rb')
+	sims_data = pickle.load(pickle_in)
+	return sims_data
+
+def save_instance(sims,N,density,budget,cost):
+	pickle_out = open('simulation/probelm_instance/%s_%s_%s_%s.pickle' % (N,round(density,5),round(budget,5),cost), 'wb')
+	pickle.dump(sims, pickle_out)

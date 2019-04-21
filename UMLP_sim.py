@@ -53,7 +53,7 @@ def generate_utility(G):
 def simulate():
     args = utils.process_args(vars(utils.parser.parse_args()))
     print(args)
-    Ns, densities, solvers, budgets, nsim, costType, verbose = args
+    Ns, densities, solvers, budgets, nsim, costType, verbose, loadPrev = args
     result_dict = []
     result_colnums_names = ['N','Density','Solver','Budget','Cost',
                             'Time_avg','Time_sd','Sol_avg','Sol_sd']
@@ -67,11 +67,29 @@ def simulate():
                 for cost in costType:
                     sols = np.zeros((nsim,len(solvers)))
                     times = np.zeros((nsim,len(solvers)))
+                    if loadPrev:
+                        try:
+                            print ("Loading previously saved test instances...")
+                            sims = utils.load_saved_instance(N,density,budget,cost)
+                        except:
+                            print ("Failed to load... Creating new instances...")
+                            sims = []
+                            loadPrev = False
+                    else:
+                        print ("Creating new instances...")
+                            sims = []
+
                     for sim in range(nsim):
-                        G = generate_random_dag(N, density)
-                        B = 5 * N * budget
-                        U = generate_utility(G)
-                        C = generate_cost(G)
+                        if loadPrev and sim < len(sims):
+                            changed_instance = False
+                            G,B,U,C = sims[sim]
+                        else:
+                            changed_instance = True
+                            G = generate_random_dag(N, density)
+                            B = 5 * N * budget
+                            U = generate_utility(G)
+                            C = generate_cost(G)
+                            sims.append((G,B,U,C))
                         for solver_index in range(len(solvers)):
                             solver = solvers[solver_index]
                             if solver == "ilp":
@@ -84,6 +102,9 @@ def simulate():
                             times[sim,solver_index] = s_time
                         progress += 1
                         if verbose: utils.update_progress(progress/total_simulations)
+                    if changed_instance:
+                        print ("\nTest instances saved for future use.")
+                        utils.save_instance(sims,N,density,budget,cost)
 
                     result_dict.extend(utils.generate_result_dict(N, density, budget, 
                                                                   cost, solvers, sols, times))
