@@ -84,6 +84,20 @@ def generate_result_dict(N, density, budget, cost, solvers, sols, times):
 		result.append(d)
 	return result
 
+def bfs_helper(G,nodes_depth,seen,queue):
+	depth = 0 
+	nodes_depth = copy.deepcopy(nodes_depth)
+	seen = copy.deepcopy(seen)
+	while queue:
+		vertex,d = queue.popleft()
+		if d > depth: depth += 1
+		for node in list(G.neighbors(vertex)):
+			if node not in seen:
+				seen.add(node)
+				queue.append((node,depth+1))
+				nodes_depth[node] = depth+1
+	return nodes_depth, seen, queue
+
 
 def bfs_depth(G):
 	nodes_in_degree = list(G.in_degree())
@@ -94,22 +108,16 @@ def bfs_depth(G):
 	nodes = list(np.arange(G.order()))
 	nodes_depth = list(np.arange(G.order()))
 	nodes_depth[root] = 0
-	depth = 0
-	while queue:
-		vertex,d = queue.popleft()
-		if d > depth: depth += 1
-		for node in list(G.neighbors(vertex)):
-			if node not in seen:
-				seen.add(node)
-				queue.append((node,depth+1))
-				nodes_depth[node] = depth+1
+	nodes_depth, seen, queue = bfs_helper(G,nodes_depth,seen,queue)
 	for other_root in roots:
 		nodes_depth[other_root] = 0
+		queue.append((other_root, 0))
+		nodes_depth, seen, queue = bfs_helper(G,nodes_depth,seen,queue)
 	return nodes, nodes_depth
 
 
 def update_progress(progress):
-    barLength = 40 # Modify this to change the length of the progress bar
+    barLength = 30 # Modify this to change the length of the progress bar
     status = ""
     if isinstance(progress, int):
         progress = float(progress)
@@ -123,7 +131,8 @@ def update_progress(progress):
         progress = 1
         status = "Done...\r\n"
     block = int(round(barLength*progress))
-    text = "\rPercent: [{0}] {1}% {2}".format( "="*block + " "*(barLength-block), progress*100, status)
+    progress_print = round(progress*100,3)
+    text = "\rPercent: [{0}] {1}% {2}".format( "="*block + " "*(barLength-block), progress_print, status)
     sys.stdout.write(text)
     sys.stdout.flush()
 

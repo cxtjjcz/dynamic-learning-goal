@@ -60,8 +60,6 @@ def simulate():
     total_simulations = utils.getTotalSimulation([Ns, densities, budgets, costType])
     total_simulations *= nsim
     progress = 0
-    print (total_simulations)
-
 
     for N in Ns:
         for density in densities:
