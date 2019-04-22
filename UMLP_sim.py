@@ -69,7 +69,7 @@ def simulate():
                     times = np.zeros((nsim,len(solvers)))
                     if loadPrev:
                         try:
-                            print ("Loading previously saved test instances...")
+                            print ("\nLoading previously saved test instances...")
                             sims = utils.load_saved_instance(N,density,budget,cost)
                         except:
                             print ("Failed to load... Creating new instances...")
