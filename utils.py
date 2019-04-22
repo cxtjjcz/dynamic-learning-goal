@@ -4,7 +4,7 @@
 '''
 import networkx as nx
 import numpy as np
-import random,copy, time, json, os, argparse, collections,pickle
+import random,copy, time, json, os, argparse, collections,pickle, datetime, csv
 from functools import reduce
 from gurobipy import *
 from UMLP_solver import *
@@ -155,3 +155,16 @@ def load_saved_instance(N,density,budget,cost):
 def save_instance(sims,N,density,budget,cost):
 	pickle_out = open('simulation/probelm_instance/%s_%s_%s_%s.pickle' % (N,round(density,5),round(budget,5),cost), 'wb')
 	pickle.dump(sims, pickle_out)
+
+
+def export(column_names, data):
+	now = datetime.datetime.now()
+	csv_file = "simulation/simulation_" + now.strftime("%Y-%m-%d-%H-%M") + ".csv"
+	try:
+		with open(csv_file, 'w') as csvfile:
+			writer = csv.DictWriter(csvfile, fieldnames=column_names)
+			writer.writeheader()
+			for d in data:
+				writer.writerow(d)
+	except IOError:
+		print("I/O error") 

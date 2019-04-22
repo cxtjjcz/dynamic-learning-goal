@@ -61,65 +61,60 @@ def simulate():
     total_simulations *= nsim
     progress = 0
 
-    for N in Ns:
-        for density in densities:
-            for budget in budgets:
-                for cost in costType:
-                    sols = np.zeros((nsim,len(solvers)))
-                    times = np.zeros((nsim,len(solvers)))
-                    if loadPrev:
-                        try:
-                            print ("\nLoading previously saved test instances...")
-                            sims = utils.load_saved_instance(N,density,budget,cost)
-                        except:
-                            print ("Failed to load... Creating new instances...")
-                            sims = []
-                            loadPrev = False
-                    else:
-                        print ("Creating new instances...")
-                        sims = []
-
-                    for sim in range(nsim):
-                        if loadPrev and sim < len(sims):
-                            changed_instance = False
-                            G,B,U,C = sims[sim]
-                        else:
-                            changed_instance = True
-                            G = generate_random_dag(N, density)
-                            B = 5 * N * budget
-                            U = generate_utility(G)
-                            C = generate_cost(G)
-                            sims.append((G,B,U,C))
-                        for solver_index in range(len(solvers)):
-                            solver = solvers[solver_index]
-                            if solver == "ilp":
-                                s_time, s_sol = ilp_time(G,C,B,U)
-                            elif solver == "bf":
-                                s_time, s_sol = brute_force_time(G,C,B,U,cost)
-                            elif solver == "gd":
-                                s_time, s_sol = greedy_time(G,C,B,U,cost)
-                            sols[sim,solver_index] = s_sol
-                            times[sim,solver_index] = s_time
-                        progress += 1
-                        if verbose: utils.update_progress(progress/total_simulations)
-                    if changed_instance:
-                        print ("\nTest instances saved for future use.")
-                        utils.save_instance(sims,N,density,budget,cost)
-
-                    result_dict.extend(utils.generate_result_dict(N, density, budget, 
-                                                                  cost, solvers, sols, times))
-                        
-                    
-    now = datetime.datetime.now()
-    csv_file = "simulation/simulation_" + now.strftime("%Y-%m-%d-%H-%M") + ".csv"
     try:
-        with open(csv_file, 'w') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=result_colnums_names)
-            writer.writeheader()
-            for data in result_dict:
-                writer.writerow(data)
-    except IOError:
-        print("I/O error") 
+        for N in Ns:
+            for density in densities:
+                for budget in budgets:
+                    for cost in costType:
+                        sols = np.zeros((nsim,len(solvers)))
+                        times = np.zeros((nsim,len(solvers)))
+                        if loadPrev:
+                            try:
+                                print ("\nLoading previously saved test instances...")
+                                sims = utils.load_saved_instance(N,density,budget,cost)
+                            except:
+                                print ("Failed to load... Creating new instances...")
+                                sims = []
+                                loadPrev = False
+                        else:
+                            print ("Creating new instances...")
+                            sims = []
+
+                        for sim in range(nsim):
+                            if loadPrev and sim < len(sims):
+                                changed_instance = False
+                                G,B,U,C = sims[sim]
+                            else:
+                                changed_instance = True
+                                G = generate_random_dag(N, density)
+                                B = 5 * N * budget
+                                U = generate_utility(G)
+                                C = generate_cost(G)
+                                sims.append((G,B,U,C))
+                            for solver_index in range(len(solvers)):
+                                solver = solvers[solver_index]
+                                if solver == "ilp":
+                                    s_time, s_sol = ilp_time(G,C,B,U)
+                                elif solver == "bf":
+                                    s_time, s_sol = brute_force_time(G,C,B,U,cost)
+                                elif solver == "gd":
+                                    s_time, s_sol = greedy_time(G,C,B,U,cost)
+                                sols[sim,solver_index] = s_sol
+                                times[sim,solver_index] = s_time
+                            progress += 1
+                            if verbose: utils.update_progress(progress/total_simulations)
+                        if changed_instance:
+                            print ("\nTest instances saved for future use.")
+                            utils.save_instance(sims,N,density,budget,cost)
+
+                        result_dict.extend(utils.generate_result_dict(N, density, budget, 
+                                                                      cost, solvers, sols, times))
+
+        utils.export(result_colnums_names, result_dict)
+    except KeyboardInterrupt:
+        utils.export(result_colnums_names, result_dict)
+
+
 
 
 if __name__ == '__main__':
