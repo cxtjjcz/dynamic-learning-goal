@@ -31,6 +31,7 @@ parser.add_argument('--maxlearnP',default = '[0.166,0.166,0.1]', type=str,
 parser.add_argument('--costType',default = '[add]', type=str, 
     help="Specify cost type in [x,y,...] form (add: additive; mono: monotone; sub: submodular)")
 parser.add_argument('--loadPrev',default = True, type=bool, help="Load previously created test instances?")
+parser.add_argument('--standardize',default = False, type=bool, help="Standardize solution. Only valid if one of the solver is greedy")
 
 def process_args(p):
 	def splitAndStrip(s):
@@ -42,9 +43,11 @@ def process_args(p):
 	verbose = p['verbose']
 	costType = p['costType']
 	loadPrev = p['loadPrev']
+	standardize = p['standardize']
 	p.pop('nsim')
 	p.pop('verbose')
 	p.pop('loadPrev')
+	p.pop('standardize')
 
 	
 	arg_vals = list(map(splitAndStrip, list(p.values())))
@@ -67,14 +70,22 @@ def process_args(p):
 		if s not in ['bf','gd','ilp']:
 			raise AssertionError('Unrecognized solver type!')
 
+	if standardize and ("gd" not in solvers) and len(solvers) == 1:
+		raise AssertionError('To get the standardized solution quality comparison, you at least have to have two solvers and one of them must be greedy')
+
 	for t in costType:
 		if t not in ['add','mono','sub']:
 			raise AssertionError('Unrecognized cost function type!')
 
 
-	return [Ns, densities, solvers, budgets, nsim, costType, verbose, loadPrev]
+	return [Ns, densities, solvers, budgets, nsim, costType, verbose, loadPrev, standardize]
 
-def generate_result_dict(N, density, budget, cost, solvers, sols, times):
+def generate_result_dict(N, density, budget, cost, solvers, sols, times, standardize):
+	if standardize:
+		greedy_index = solvers.index("gd")
+		if "bf" in solvers: optimal_index = solvers.index("bf")
+		else: optimal_index = solvers.index("ilp")
+		sols = sols/sols[:,optimal_index][:,None]
 	sols_means = sols.mean(axis=0)
 	sols_sds = sols.std(axis=0)
 	times_means = times.mean(axis=0)
@@ -90,13 +101,15 @@ def generate_result_dict(N, density, budget, cost, solvers, sols, times):
 def bfs_helper(G,nodes_depth,seen,queue):
 	depth = 0 
 	nodes_depth = copy.deepcopy(nodes_depth)
-	seen = copy.deepcopy(seen)
 	while queue:
 		vertex,d = queue.popleft()
 		if d > depth: depth += 1
 		for node in list(G.neighbors(vertex)):
 			if node not in seen:
 				seen.add(node)
+				queue.append((node,depth+1))
+				nodes_depth[node] = depth+1
+			elif node in seen and nodes_depth[node] < depth+1:
 				queue.append((node,depth+1))
 				nodes_depth[node] = depth+1
 	return nodes_depth, seen, queue
@@ -148,12 +161,12 @@ def getTotalSimulation(Ls):
 	return simulations
 
 def load_saved_instance(N,density,budget,cost):
-	pickle_in = open('simulation/probelm_instance/%s_%s_%s_%s.pickle' % (N,round(density,5),round(budget,5),cost), 'rb')
+	pickle_in = open('simulation/probelm_instance/%s_%s_%s.pickle' % (N,round(density,5),round(budget,5)), 'rb')
 	sims_data = pickle.load(pickle_in)
 	return sims_data
 
 def save_instance(sims,N,density,budget,cost):
-	pickle_out = open('simulation/probelm_instance/%s_%s_%s_%s.pickle' % (N,round(density,5),round(budget,5),cost), 'wb')
+	pickle_out = open('simulation/probelm_instance/%s_%s_%s.pickle' % (N,round(density,5),round(budget,5)), 'wb')
 	pickle.dump(sims, pickle_out)
 
 

@@ -53,13 +53,14 @@ def generate_utility(G):
 def simulate():
     args = utils.process_args(vars(utils.parser.parse_args()))
     print(args)
-    Ns, densities, solvers, budgets, nsim, costType, verbose, loadPrev = args
+    Ns, densities, solvers, budgets, nsim, costType, verbose, loadPrev, standardize = args
     result_dict = []
     result_colnums_names = ['N','Density','Solver','Budget','Cost',
                             'Time_avg','Time_sd','Sol_avg','Sol_sd']
     total_simulations = utils.getTotalSimulation([Ns, densities, budgets, costType])
     total_simulations *= nsim
     progress = 0
+    loadPrev_outer = loadPrev
 
     try:
         for N in Ns:
@@ -108,7 +109,9 @@ def simulate():
                             utils.save_instance(sims,N,density,budget,cost)
 
                         result_dict.extend(utils.generate_result_dict(N, density, budget, 
-                                                                      cost, solvers, sols, times))
+                                                                      cost, solvers, sols, times,
+                                                                      standardize))
+                        loadPrev = loadPrev_outer
 
         utils.export(result_colnums_names, result_dict)
     except KeyboardInterrupt:
