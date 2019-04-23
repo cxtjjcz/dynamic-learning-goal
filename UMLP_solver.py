@@ -166,28 +166,28 @@ def brute_force_time(G, C, B, U, type = "add"):
 ################################################################
 def greedy(G, C, B, U, type = "add"):
 	#greedy search
-	# print(list(G.edges()))
 	A = []
 	B = B
 	global_max = ((A,B), 0)
-	nodes, depth_order = utils.bfs_depth(G)
-	topo_sorted = list(nx.topological_sort(G))
-	topo_order = list(np.argsort(topo_sorted))
-	depth_utility_order = list(zip(nodes, depth_order,topo_order,-U))
-	greedy_order = sorted(depth_utility_order, key = operator.itemgetter(1, 2, 3))
-	# print(greedy_order)
+	nodes = list(np.arange(G.order()))
+	depth_order = utils.bfs_depth(G)
+	# topo_sorted = list(nx.topological_sort(G))
+	# topo_order = list(np.argsort(topo_sorted))
+	depth_utility_order = list(zip(nodes, depth_order, -U))
+	greedy_order = sorted(depth_utility_order, key = operator.itemgetter(1, 2))
+
 	seq = []
 	utility = 0
 	while B > 0:
-		node, depth, topo_order, u_node = greedy_order.pop(0)
+		node, depth, u_node = greedy_order.pop(0)
 		c_node = cost(C, seq, node, type)
 		if B - c_node < 0: break
 		else:
-			# print(node, u_node, c_node)
 			seq.append(node)
 			utility -= u_node
 			B -= c_node
 	return (seq, utility, B)
+
 
 def greedy_time(G, C, B, U, type = "add"):
 	start = time.time()

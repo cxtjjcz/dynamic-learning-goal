@@ -100,7 +100,6 @@ def generate_result_dict(N, density, budget, cost, solvers, sols, times, standar
 
 def bfs_helper(G,nodes_depth,seen,queue):
 	depth = 0 
-	nodes_depth = copy.deepcopy(nodes_depth)
 	while queue:
 		vertex,d = queue.popleft()
 		if d > depth: depth += 1
@@ -110,26 +109,21 @@ def bfs_helper(G,nodes_depth,seen,queue):
 				queue.append((node,depth+1))
 				nodes_depth[node] = depth+1
 			elif node in seen and nodes_depth[node] < depth+1:
-				queue.append((node,depth+1))
 				nodes_depth[node] = depth+1
+				queue.append((node,depth+1))
 	return nodes_depth, seen, queue
-
 
 def bfs_depth(G):
 	nodes_in_degree = list(G.in_degree())
 	roots_with_degree = list(filter(lambda x: x[1] == 0, nodes_in_degree))
 	roots = list(map(lambda x: x[0],roots_with_degree))
-	root = roots.pop()
-	seen, queue = set([root]), collections.deque([(root,0)])
-	nodes = list(np.arange(G.order()))
 	nodes_depth = list(np.arange(G.order()))
-	nodes_depth[root] = 0
-	nodes_depth, seen, queue = bfs_helper(G,nodes_depth,seen,queue)
-	for other_root in roots:
-		nodes_depth[other_root] = 0
-		queue.append((other_root, 0))
+	seen, queue = set(), collections.deque()
+	for root in roots:
+		nodes_depth[root] = 0
+		queue.append((root, 0))
 		nodes_depth, seen, queue = bfs_helper(G,nodes_depth,seen,queue)
-	return nodes, nodes_depth
+	return nodes_depth
 
 
 def update_progress(progress):
