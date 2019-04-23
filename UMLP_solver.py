@@ -61,14 +61,59 @@ def ilp_time(G,C,B,U):
 ################################################################
 ####################### Helper Fns. ############################
 ################################################################
-def cost(C, A, i, type = "add"):
+def get_index (A):
+    res = 0
+    for kp in A:
+        res += 2**kp
+    return res 
+
+def generate_cost(G, cost_type = "add"):
+    # cost_type has add, monotone and monotone_general
+    N = G.order()
+    C = np.zeros((2**N, N))
+    C[0] = np.random.uniform(1,10,N)
+    if cost_type == "add" or cost_type == "monotone":
+        return C[0]
+    elif cost_type == "monotone_general":
+        def generate_part_cost(C, A, i):
+            maximum_cost = cost(C,[],i, "monotone_general")
+            for i in range(len(A)):
+                curA = A[:i]+A[i+1:]
+                curCost = cost(C,curA, i, "monotone_general")
+                if curCost <= maximum_cost:
+                    maximum_cost = curCost
+            return np.random.uniform(maximum_cost*(1-1.0/N), maximum_cost)
+
+        def all_subsets(N, x):
+
+            return itertools.combinations(list(range(N)), x)
+
+
+        for x in range(N):
+            subsets = all_subsets(N,x)
+            for subset in subsets:
+                for i in range(N):
+                    index = get_index(subset)
+                    C[index][i] = generate_part_cost(C, subset, i)
+        return C 
+
+
+def cost(C, A, i, cost_type = "add"):
     #inputs:
     # C: cost array
     # A: set of acquired kps
     # i: index of the kp that we want to know the cost of
-    #output: cost of k_i
-    cost = C[i]
-    return cost
+    # output: cost of k_i
+    if cost_type == "add":
+        return C[i]
+    elif cost_type == "monotone":
+        N = len(C)
+        discount = 1
+        for j in range(len(A)):
+            discount -= 1.0/N*math.exp(-C[A[j]]/10)
+        return C[i]*discount
+    elif cost_type == "monotone_general":
+        return C[get_index(A)][i]
 
 def get_actions(S, G, C, type = "add"):
     #inputs:
