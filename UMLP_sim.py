@@ -49,12 +49,12 @@ def get_index (A):
 def generate_cost(G, cost_type = "add"):
     # cost_type has add, monotone
     N = G.order()
+    C0 = np.random.uniform(1,10,N)
     if cost_type == "add":
-        C = np.random.uniform(1,10,N)
-        return C
+        return C0
     elif cost_type == "monotone":
         C = np.zeros((2**N, N))
-        C[0] = np.random.uniform(1,10,N)
+        C[0] = C0
         def generate_part_cost(C, A, i):
             maximum_cost = cost(C,[],i, cost_type)
             for i in range(len(A)):
@@ -104,7 +104,13 @@ def simulate():
                         if loadPrev:
                             try:
                                 print ("\nLoading previously saved test instances...")
-                                sims = utils.load_saved_instance(N,density,budget,cost)
+                                try:
+                                    update_cost = False
+                                    sims = utils.load_saved_instance(N,density,budget,cost)
+                                except:
+                                    print("Need to update costs...")
+                                    update_cost = True
+                                    sims = utils.load_saved_instance(N,density,budget,None)
                             except:
                                 print ("Failed to load... Creating new instances...")
                                 sims = []
@@ -117,9 +123,10 @@ def simulate():
                             if loadPrev and sim < len(sims):
                                 changed_instance = False
                                 G,B,U,C = sims[sim]
-                                if len(C.shape) == 1 and cost == "monotone":
+                                if update_cost:
                                     print("Updating costs...")
                                     C = generate_cost(G, cost)
+                                    sims[sim] = G,B,U,C
                                     changed_instance = True
                             else:
                                 changed_instance = True
@@ -131,14 +138,17 @@ def simulate():
                             for solver_index in range(len(solvers)):
                                 solver = solvers[solver_index]
                                 if solver == "ilp":
-                                    if cost == "monotone": C_ilp = C[0]
-                                    s_time, s_sol = ilp_time(G,C_ilp,B,U)
+                                    if cost == "monotone":
+                                        C_ilp = C[0]
+                                        s_time, s_sol = ilp_time(G,C[0],B,U)
+                                    elif cost == "add":
+                                        s_time, s_sol = ilp_time(G,C,B,U)
                                 elif solver == "bf":
                                     s_time, s_sol = brute_force_time(G,C,B,U,cost)
                                 elif solver == "gd":
                                     s_time, s_sol = greedy_time(G,C,B,U,cost)
-                                elif solver == "monotone-gd":
-                                    s_time, s_sol = monotone_greedy_time(G,C,B,U,cost)
+                                elif solver == "gd2":
+                                    s_time, s_sol = greedy2_time(G,C,B,U,cost)
                                 sols[sim,solver_index] = s_sol
                                 times[sim,solver_index] = s_time
                             progress += 1

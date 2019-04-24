@@ -67,10 +67,10 @@ def process_args(p):
 		raise Exception("Number conversion error! Please check your arguments.")
 
 	for s in solvers:
-		if s not in ['bf','gd','ilp','monotone-gd']:
+		if s not in ['bf','gd','ilp','gd2']:
 			raise AssertionError('Unrecognized solver type!')
 
-	if standardize and ("gd" not in solvers) and len(solvers) == 1:
+	if standardize and ("gd" not in solvers or "gd2" not in solvers) and len(solvers) == 1:
 		raise AssertionError('To get the standardized solution quality comparison, you at least have to have two solvers and one of them must be greedy')
 
 	for t in costType:
@@ -173,12 +173,15 @@ def getTotalSimulation(Ls):
 	return simulations
 
 def load_saved_instance(N,density,budget,cost):
-	pickle_in = open('simulation/probelm_instance/%s_%s_%s.pickle' % (N,round(density,5),round(budget,5)), 'rb')
+	if cost == None:
+		pickle_in = open('simulation/probelm_instance/%s_%s_%s.pickle' % (N,round(density,5),round(budget,5)), 'rb')
+	else:
+		pickle_in = open('simulation/probelm_instance/%s_%s_%s_%s.pickle' % (N,round(density,5),round(budget,5),cost), 'rb')
 	sims_data = pickle.load(pickle_in)
 	return sims_data
 
 def save_instance(sims,N,density,budget,cost):
-	pickle_out = open('simulation/probelm_instance/%s_%s_%s.pickle' % (N,round(density,5),round(budget,5)), 'wb')
+	pickle_out = open('simulation/probelm_instance/%s_%s_%s_%s.pickle' % (N,round(density,5),round(budget,5),cost), 'wb')
 	pickle.dump(sims, pickle_out)
 
 

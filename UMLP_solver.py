@@ -184,9 +184,13 @@ def greedy(G, C, B, U, cost_type = "add"):
 	# print(greedy_order)
 	seq = []
 	utility = 0
+	# print(C)
 	while B > 0 and len(greedy_order) > 0:
 		node, depth, u_node = greedy_order.pop(0)
-		c_node = cost(C, seq, node, cost_type)
+		if cost_type == "add":
+			c_node = cost(C, seq, node, cost_type)
+		elif cost_type == "monotone":
+			c_node = cost(C, seq, node, cost_type)
 		if B - c_node < 0: break
 		else:
 			seq.append(node)
@@ -205,37 +209,55 @@ def greedy_time(G, C, B, U, cost_type = "add"):
 ################################################################
 ################### Monotone Greedy ############################
 ################################################################
-def monotone_greedy(G, C, B, U, cost_type = "monotone"):
-    nodes = list(G.nodes())
-    seq = []
+def greedy2(G,C,B,U, cost_type = "monotone"):
+    frontier = {n for n,d in G.out_degree() if d==0}
+    visited = []
+    unvisited = list(G.nodes())
     utility = 0
-    while B > 0 and len(nodes)>0:
-        max_diff = 0
+    while len(unvisited)!=0:
+        minimum = 10
         cur_node = 0
-        for node in nodes:
 
-            prereqs = np.array(list(G.in_edges(node)))
-            if len(prereqs) ==0 or np.all(np.isin(prereqs[:,0], np.array(seq))):
-                if cost_type == "add":
-                    c = cost(C,seq,node,cost_type)
-                elif cost_type  == "monotone":
-                    c = cost(C,seq,node,cost_type)
-                if max_diff == 0 or U[node] - c >= max_diff:
-                    max_diff = U[node] - c
-                    cur_node = node 
-
-        # print(cur_node, G.in_edges(cur_node), G.out_edges(cur_node))
-        c = cost(C,seq,cur_node,cost_type)
-        if B - c <0: break
-        seq.append(cur_node)
+        for node in frontier:
+            if cost_type == "add":
+                c = cost(C,unvisited,node,cost_type)
+            elif cost_type == "monotone":
+                c = cost(C,unvisited,node,cost_type)
+            u = U[node]
+            if u - c < minimum:
+                minimum = u-c
+                cur_node = node 
+        visited.append(cur_node)
+        #print(frontier, cur_node)
+        frontier.remove(cur_node)
+        
+        unvisited.remove(cur_node)
+        for (x,y) in list(G.in_edges(cur_node)):
+            all_visited = True
+            for (_,n) in list(G.out_edges(x)):
+                if n not in visited:
+                    all_visited = False
+                    break
+            if x not in visited and all_visited:
+                frontier.add(x)
+        
+    seq = visited[::-1]
+    index = 0
+    c = 0
+    while index < len(seq):
+        if cost_type == "add":
+            c = cost(C,seq[:index],seq[index],cost_type)
+        elif cost_type == "monotone":
+            c = cost(C,seq[:index],seq[index],cost_type)
+        if B < c: break
         B -= c
-        utility += U[cur_node]
-        nodes.remove(cur_node)
-    return (seq, utility, B)
+        utility += U[seq[index]] 
+        index += 1
+    return (seq[:index], utility, B)
 
-def monotone_greedy_time(G, C, B, U, cost_type = "monotone"):
+def greedy2_time(G, C, B, U, cost_type = "monotone"):
 	start = time.time()
-	result = monotone_greedy(G, C, B, U, cost_type)
+	result = greedy2(G, C, B, U, cost_type)
 	end = time.time()
 	sol = result[1]
 	return end - start, sol
