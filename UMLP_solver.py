@@ -1,7 +1,7 @@
 '''
  Version: 0419
  Utility Maximizing Learning Plan Solver
-  	# Brute force, Greedy, ILP Solver
+    # Brute force, Greedy, ILP Solver
     # Support Additive cost function
 '''
 import networkx as nx
@@ -20,43 +20,43 @@ import utils
 ######################## ILP ###################################
 ################################################################
 def ilp_setup(G, B, C, U):
-	N = G.order() #number of nodes
-	Ns = np.arange(0, N)
-	m = Model("milp") #create model
-	m.setParam( 'OutputFlag', False )
-	 
-	X = m.addVars(N, vtype = GRB.BINARY) #add N binary variables
-	
-	for kp_i in G.nodes():
-		# for each node in G
-		for inedge in G.in_edges(kp_i):
-			# for all of the nodes that have incoming edge to it
-			kp_j = inedge[0]
-			# add dependency contraint
-			m.addConstr(X[kp_j] - X[kp_i] >= 0,
-						name = "x%i,x%i"%(kp_i, kp_j))
+    N = G.order() #number of nodes
+    Ns = np.arange(0, N)
+    m = Model("milp") #create model
+    m.setParam( 'OutputFlag', False )
+     
+    X = m.addVars(N, vtype = GRB.BINARY) #add N binary variables
+    
+    for kp_i in G.nodes():
+        # for each node in G
+        for inedge in G.in_edges(kp_i):
+            # for all of the nodes that have incoming edge to it
+            kp_j = inedge[0]
+            # add dependency contraint
+            m.addConstr(X[kp_j] - X[kp_i] >= 0,
+                        name = "x%i,x%i"%(kp_i, kp_j))
 
 
-	CoeffC = dict(zip(X, C)) 
-	# add budget constraint
-	m.addLConstr(X.prod(CoeffC), GRB.LESS_EQUAL, B) 
-	
+    CoeffC = dict(zip(X, C)) 
+    # add budget constraint
+    m.addLConstr(X.prod(CoeffC), GRB.LESS_EQUAL, B) 
+    
 
-	CoeffV = dict(zip(X, U)) 
-	# set objective function
-	m.setObjective(X.prod(CoeffV), GRB.MAXIMIZE) 
+    CoeffV = dict(zip(X, U)) 
+    # set objective function
+    m.setObjective(X.prod(CoeffV), GRB.MAXIMIZE) 
 
-	return m
+    return m
 
 def ilp_time(G,C,B,U):
-	m = ilp_setup(G, B, C, U)
-	start = time.time()
-	m.optimize()
-	# for v in m.getVars():
-	# 	print (v.varName, v.x)
-	end = time.time()
-	sol = m.objVal
-	return end - start, sol
+    m = ilp_setup(G, B, C, U)
+    start = time.time()
+    m.optimize()
+    # for v in m.getVars():
+    #   print (v.varName, v.x)
+    end = time.time()
+    sol = m.objVal
+    return end - start, sol
 
 ################################################################
 ####################### Helper Fns. ############################
@@ -67,37 +67,6 @@ def get_index (A):
         res += 2**kp
     return res 
 
-def generate_cost(G, cost_type = "add"):
-    # cost_type has add, monotone and monotone_general
-    N = G.order()
-    C = np.zeros((2**N, N))
-    C[0] = np.random.uniform(1,10,N)
-    if cost_type == "add" or cost_type == "monotone":
-        return C[0]
-    elif cost_type == "monotone_general":
-        def generate_part_cost(C, A, i):
-            maximum_cost = cost(C,[],i, "monotone_general")
-            for i in range(len(A)):
-                curA = A[:i]+A[i+1:]
-                curCost = cost(C,curA, i, "monotone_general")
-                if curCost <= maximum_cost:
-                    maximum_cost = curCost
-            return np.random.uniform(maximum_cost*(1-1.0/N), maximum_cost)
-
-        def all_subsets(N, x):
-
-            return itertools.combinations(list(range(N)), x)
-
-
-        for x in range(N):
-            subsets = all_subsets(N,x)
-            for subset in subsets:
-                for i in range(N):
-                    index = get_index(subset)
-                    C[index][i] = generate_part_cost(C, subset, i)
-        return C 
-
-
 def cost(C, A, i, cost_type = "add"):
     #inputs:
     # C: cost array
@@ -107,20 +76,14 @@ def cost(C, A, i, cost_type = "add"):
     if cost_type == "add":
         return C[i]
     elif cost_type == "monotone":
-        N = len(C)
-        discount = 1
-        for j in range(len(A)):
-            discount -= 1.0/N*math.exp(-C[A[j]]/10)
-        return C[i]*discount
-    elif cost_type == "monotone_general":
         return C[get_index(A)][i]
 
-def get_actions(S, G, C, type = "add"):
+def get_actions(S, G, C, cost_type = "add"):
     #inputs:
     # S: current state
     # G: kps graph object
     # C: cost array
-    # type: cost function type
+    # cost_type: cost function cost_type
     #output: all avaliable actions in state S
     A, B = S
     n = len(A)
@@ -136,7 +99,7 @@ def get_actions(S, G, C, type = "add"):
         return np.all(prereqs_cleared)
     
     def query_cost(k_i):
-        return cost(C, A, k_i, type)
+        return cost(C, A, k_i, cost_type)
     
     costs = (np.apply_along_axis(query_cost, 1, KPs)).T[0]
     under_budget = (np.apply_along_axis(query_cost, 1, KPs)).T[0] <= B
@@ -169,7 +132,7 @@ def compute_utility(S, U):
 ################################################################
 ####################### Brute Force ############################
 ################################################################
-def brute_force(G, C, B, U, type = "add"):
+def brute_force(G, C, B, U, cost_type = "add"):
     #brute force graph traversal with BFS
     A = []
     B = B
@@ -177,7 +140,7 @@ def brute_force(G, C, B, U, type = "add"):
     global_max = ((A,B), 0)
     while len(Q) != 0:
         S = Q.popleft()
-        actions, costs = get_actions(S, G, C, type) 
+        actions, costs = get_actions(S, G, C, cost_type) 
         action_indicies = list(range(len(actions)))
         take_action_i = lambda i: take_action(actions[i], costs[i], S)
         newstates = list(map(take_action_i, action_indicies))
@@ -199,42 +162,97 @@ def brute_force(G, C, B, U, type = "add"):
                 global_max = (current_max_seq, current_max_u)
     return global_max
 
-def brute_force_time(G, C, B, U, type = "add"):
-	start = time.time()
-	result = brute_force(G, C, B, U)
-	end = time.time()
-	sol = result[1]
-	return end - start, sol
+def brute_force_time(G, C, B, U, cost_type = "add"):
+    start = time.time()
+    result = brute_force(G, C, B, U, cost_type)
+    end = time.time()
+    sol = result[1]
+    return end - start, sol
 
 ################################################################
 ########################### Greedy #############################
 ################################################################
-def greedy(G, C, B, U, type = "add"):
-	#greedy search
-	A = []
-	B = B
-	global_max = ((A,B), 0)
-	nodes, depth_order = utils.bfs_depth(G)
-	topo_sorted = list(nx.topological_sort(G))
-	topo_order = list(np.argsort(topo_sorted))
-	depth_utility_order = list(zip(nodes, depth_order,topo_order,-U))
-	greedy_order = sorted(depth_utility_order, key = operator.itemgetter(1, 2, 3))
-	seq = []
-	utility = 0
-	while B > 0:
-		node, depth, topo_order, u_node = greedy_order.pop(0)
-		
-		c_node = cost(C, seq, node, type)
-		if B - c_node < 0: break
-		else:
-			seq.append(node)
-			utility -= u_node
-			B -= c_node
-	return (seq, utility, B)
+def greedy(G, C, B, U, cost_type = "add"):
+    #greedy search
+    A = []
+    B = B
+    global_max = ((A,B), 0)
+    nodes = list(np.arange(G.order()))
+    depth_order = utils.longest_path(G)
+    depth_utility_order = list(zip(nodes, depth_order, -U))
+    greedy_order = sorted(depth_utility_order, key = operator.itemgetter(1, 2))
+    # print(greedy_order)
+    seq = []
+    utility = 0
+    while B > 0 and len(greedy_order) > 0:
+        node, depth, u_node = greedy_order.pop(0)
+        c_node = cost(C, seq, node, cost_type)
+        if B - c_node < 0: break
+        else:
+            seq.append(node)
+            utility -= u_node
+            B -= c_node
+    return (seq, utility, B)
 
-def greedy_time(G, C, B, U, type = "add"):
-	start = time.time()
-	result = greedy(G, C, B, U)
-	end = time.time()
-	sol = result[1]
-	return end - start, sol
+
+def greedy_time(G, C, B, U, cost_type = "add"):
+    start = time.time()
+    result = greedy(G, C, B, U, cost_type)
+    end = time.time()
+    sol = result[1]
+    return end - start, sol
+
+################################################################
+################### Monotone Greedy ############################
+################################################################
+def monotone_greedy(G, C, B, U, cost_type = "monotone"):
+    frontier = {n for n,d in G.out_degree() if d==0}
+    visited = []
+    unvisited = list(G.nodes())
+    utility = 0
+    while len(unvisited)!=0:
+        minimum = 10
+        cur_node = 0
+
+        for node in frontier:
+            if cost_type == "add":
+                c = cost(C[0],unvisited,node,cost_type)
+            elif cost_type == "monotone":
+                c = cost(C,unvisited,node,cost_type)
+            u = U[node]
+            if u - c < minimum:
+                minimum = u-c
+                cur_node = node 
+        visited.append(cur_node)
+        frontier.remove(cur_node)
+        
+        unvisited.remove(cur_node)
+        for (x,y) in list(G.in_edges(cur_node)):
+            all_visited = True
+            for (_,n) in list(G.out_edges(x)):
+                if n not in visited:
+                    all_visited = False
+                    break
+            if x not in visited and all_visited:
+                frontier.add(x)
+        
+    seq = visited[::-1]
+    index = 0
+    c = 0
+    while index < len(seq):
+        if cost_type == "add":
+            c = cost(C[0],seq[:index],seq[index],cost_type)
+        elif cost_type == "monotone":
+            c = cost(C,seq[:index],seq[index],cost_type)
+        if B < c: break
+        B -= c
+        utility += U[seq[index]] 
+        index += 1
+    return (seq[:index], utility, B)
+
+def monotone_greedy_time(G, C, B, U, cost_type = "monotone"):
+    start = time.time()
+    result = monotone_greedy(G, C, B, U, cost_type)
+    end = time.time()
+    sol = result[1]
+    return end - start, sol
