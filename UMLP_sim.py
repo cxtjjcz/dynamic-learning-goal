@@ -40,10 +40,42 @@ def generate_random_dag(nodes, density):
     return G
 
 
-def generate_cost(G):
-    N = G.order()
-    return np.random.uniform(1,10, N)
+def get_index (A):
+    res = 0
+    for kp in A:
+        res += 2**kp
+    return res 
 
+def generate_cost(G, cost_type = "add"):
+    # cost_type has add, monotone
+    N = G.order()
+    if cost_type == "add":
+        C = np.random.uniform(1,10,N)
+        return C
+    elif cost_type == "monotone":
+        C = np.zeros((2**N, N))
+        C[0] = np.random.uniform(1,10,N)
+        def generate_part_cost(C, A, i):
+            maximum_cost = cost(C,[],i, cost_type)
+            for i in range(len(A)):
+                curA = A[:i]+A[i+1:]
+                curCost = cost(C,curA, i, cost_type)
+                if curCost <= maximum_cost:
+                    maximum_cost = curCost
+            return np.random.uniform(maximum_cost*(1-1.0/N), maximum_cost)
+
+        def all_subsets(N, x):
+
+            return itertools.combinations(list(range(N)), x)
+
+
+        for x in range(N):
+            subsets = all_subsets(N,x)
+            for subset in subsets:
+                for i in range(N):
+                    index = get_index(subset)
+                    C[index][i] = generate_part_cost(C, subset, i)
+    return C
 
 def generate_utility(G):
     N = G.order()
@@ -85,21 +117,28 @@ def simulate():
                             if loadPrev and sim < len(sims):
                                 changed_instance = False
                                 G,B,U,C = sims[sim]
+                                if len(C.shape) == 1 and cost == "monotone":
+                                    print("Updating costs...")
+                                    C = generate_cost(G, cost)
+                                    changed_instance = True
                             else:
                                 changed_instance = True
                                 G = generate_random_dag(N, density)
                                 B = 5 * N * budget
                                 U = generate_utility(G)
-                                C = generate_cost(G)
+                                C = generate_cost(G, cost)
                                 sims.append((G,B,U,C))
                             for solver_index in range(len(solvers)):
                                 solver = solvers[solver_index]
                                 if solver == "ilp":
-                                    s_time, s_sol = ilp_time(G,C,B,U)
+                                    if cost == "monotone": C_ilp = C[0]
+                                    s_time, s_sol = ilp_time(G,C_ilp,B,U)
                                 elif solver == "bf":
                                     s_time, s_sol = brute_force_time(G,C,B,U,cost)
                                 elif solver == "gd":
                                     s_time, s_sol = greedy_time(G,C,B,U,cost)
+                                elif solver == "monotone-gd":
+                                    s_time, s_sol = monotone_greedy_time(G,C,B,U,cost)
                                 sols[sim,solver_index] = s_sol
                                 times[sim,solver_index] = s_time
                             progress += 1
