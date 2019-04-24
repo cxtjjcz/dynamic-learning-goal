@@ -29,7 +29,7 @@ parser.add_argument('--solver',default = '[bf]', type=str,
 parser.add_argument('--maxlearnP',default = '[0.166,0.166,0.1]', type=str, 
     help="Specify the range of maximum fraction of knowledge points that user can learn in [start, end,step] format.")
 parser.add_argument('--costType',default = '[add]', type=str, 
-    help="Specify cost type in [x,y,...] form (add: additive; mono: monotone; sub: submodular)")
+    help="Specify cost type in [x,y,...] form (add: additive; monotone: monotone; sub: submodular)")
 parser.add_argument('--loadPrev',default = True, type=bool, help="Load previously created test instances?")
 parser.add_argument('--standardize',default = False, type=bool, help="Standardize solution. Only valid if one of the solver is greedy")
 
@@ -67,14 +67,14 @@ def process_args(p):
 		raise Exception("Number conversion error! Please check your arguments.")
 
 	for s in solvers:
-		if s not in ['bf','gd','ilp']:
+		if s not in ['bf','gd','ilp','monotone-gd']:
 			raise AssertionError('Unrecognized solver type!')
 
 	if standardize and ("gd" not in solvers) and len(solvers) == 1:
 		raise AssertionError('To get the standardized solution quality comparison, you at least have to have two solvers and one of them must be greedy')
 
 	for t in costType:
-		if t not in ['add','mono','sub']:
+		if t not in ['add','monotone','sub']:
 			raise AssertionError('Unrecognized cost function type!')
 
 
@@ -124,6 +124,24 @@ def bfs_depth(G):
 		queue.append((root, 0))
 		nodes_depth, seen, queue = bfs_helper(G,nodes_depth,seen,queue)
 	return nodes_depth
+
+def max_dist(G, v, d):
+	v_in_edges = G.in_edges(v)
+	v_in_nodes = list(map(lambda x: x[0],v_in_edges))
+	dist_v_in_nodes = d[v_in_nodes]
+	if len(v_in_nodes) == 0:
+		return 0
+	else:
+		return max(dist_v_in_nodes) + 1
+
+def longest_path(G):
+	N = G.order()
+	dist = np.zeros(N)
+	topo_sorted = list(nx.topological_sort(G))
+	for i in range(N):
+		node = topo_sorted[i]
+		dist[node] = max_dist(G, node, dist)
+	return list(dist)
 
 
 def update_progress(progress):
