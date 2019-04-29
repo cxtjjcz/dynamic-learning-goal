@@ -173,12 +173,23 @@ def getTotalSimulation(Ls):
 	return simulations
 
 def load_saved_instance(N,density,budget,cost):
+	all_filenames = os.listdir("simulation/probelm_instance")
+	new_budget = False
 	if cost == None:
 		pickle_in = open('simulation/probelm_instance/%s_%s_%s.pickle' % (N,round(density,5),round(budget,5)), 'rb')
 	else:
-		pickle_in = open('simulation/probelm_instance/%s_%s_%s_%s.pickle' % (N,round(density,5),round(budget,5),cost), 'rb')
+		# print('%s_%s_' % (N, round(density,5)))
+		all_ok = list(filter(lambda x: '%s_%s_' % (N, round(density,5)) in x, all_filenames))
+		all_ok = list(filter(lambda x: x.startswith('%s_%s_' % (N, round(density,5))), all_filenames))
+		all_ok = list(filter(lambda x: '_%s' % (cost) in x, all_ok))
+		# print(all_ok)
+		if len(all_ok) != 0:
+			new_budget = True
+			pickle_in = open('simulation/probelm_instance/'+all_ok[0], 'rb')
+		else:
+			pickle_in = open('simulation/probelm_instance/%s_%s_%s_%s.pickle' % (N,round(density,5),round(budget,5),cost), 'rb')
 	sims_data = pickle.load(pickle_in)
-	return sims_data
+	return sims_data,new_budget
 
 def save_instance(sims,N,density,budget,cost):
 	pickle_out = open('simulation/probelm_instance/%s_%s_%s_%s.pickle' % (N,round(density,5),round(budget,5),cost), 'wb')

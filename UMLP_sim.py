@@ -106,11 +106,11 @@ def simulate():
                                 print ("\nLoading previously saved test instances...")
                                 try:
                                     update_cost = False
-                                    sims = utils.load_saved_instance(N,density,budget,cost)
+                                    sims,new_budget = utils.load_saved_instance(N,density,budget,cost)
                                 except:
                                     print("Need to update costs...")
                                     update_cost = True
-                                    sims = utils.load_saved_instance(N,density,budget,None)
+                                    sims,new_budget = utils.load_saved_instance(N,density,budget,None)
                             except:
                                 print ("Failed to load... Creating new instances...")
                                 sims = []
@@ -124,10 +124,13 @@ def simulate():
                                 changed_instance = False
                                 G,B,U,C = sims[sim]
                                 if update_cost:
-                                    print("Updating costs...")
+                                    print("\nUpdating costs...")
                                     C = generate_cost(G, cost)
                                     sims[sim] = G,B,U,C
                                     changed_instance = True
+                                if new_budget:
+                                    print("\nReusing test cases but with different budget...")
+                                    B = 5 * G.order() * budget
                             else:
                                 changed_instance = True
                                 G = generate_random_dag(N, density)
@@ -153,7 +156,7 @@ def simulate():
                                 times[sim,solver_index] = s_time
                             progress += 1
                             if verbose: utils.update_progress(progress/total_simulations)
-                        if changed_instance:
+                        if changed_instance or new_budget:
                             print ("\nTest instances saved for future use.")
                             utils.save_instance(sims,N,density,budget,cost)
 
